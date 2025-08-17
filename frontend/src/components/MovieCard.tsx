@@ -2,7 +2,6 @@
 
 import { Movie } from '@/types/movie';
 import { Play, Download, Calendar, Globe, Star } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 
 interface MovieCardProps {
@@ -13,6 +12,11 @@ interface MovieCardProps {
 export default function MovieCard({ movie, onClick }: MovieCardProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+
+  // Debug logging
+  console.log(`Movie: ${movie.title}`);
+  console.log(`Poster URL: ${movie.poster}`);
+  console.log(`Image Error: ${imageError}, Loading: ${imageLoading}`);
 
   const getQualityBadgeColor = (quality: string) => {
     const q = quality.toLowerCase();
@@ -51,20 +55,25 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
       <div className="relative aspect-[2/3] bg-gray-800">
         {!imageError && movie.poster ? (
           <>
-            <Image
+            <img
               src={movie.poster}
               alt={movie.title}
-              fill
-              className={`object-cover transition-opacity duration-300 ${
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
                 imageLoading ? 'opacity-0' : 'opacity-100'
               }`}
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
+              onLoad={() => {
+                console.log(`✅ Image loaded successfully for: ${movie.title}`);
+                console.log(`✅ Loaded URL: ${movie.poster}`);
+                setImageLoading(false);
+              }}
+              onError={(e) => {
+                console.error(`❌ Image failed to load for: ${movie.title}`);
+                console.error(`❌ Failed URL: ${movie.poster}`);
+                console.error(`❌ Error details:`, e);
                 setImageError(true);
                 setImageLoading(false);
               }}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              unoptimized={movie.poster.includes('discoveryftp.net')}
+              crossOrigin="anonymous"
             />
             {imageLoading && (
               <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">

@@ -104,6 +104,99 @@ app.get('/proxy/video', async (req, res) => {
   }
 });
 
+// Handle OPTIONS requests for poster proxy
+app.options('/proxy/poster', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(200).end();
+});
+
+// Poster/Image proxy endpoint for CORS handling
+app.get('/proxy/poster', async (req, res) => {
+  try {
+    const { url } = req.query;
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL parameter is required' });
+    }
+
+    // Validate URL is from Discovery FTP
+    if (!url.includes('discoveryftp.net')) {
+      return res.status(403).json({ error: 'Only Discovery FTP URLs are allowed' });
+    }
+
+    const axios = require('axios');
+
+    // Set up proper headers for image serving
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Range',
+      'Access-Control-Expose-Headers': 'Content-Length, Content-Type',
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+    };
+
+    const response = await axios({
+      method: 'GET',
+      url: url,
+      responseType: 'stream',
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'image',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site'
+      }
+    });
+
+    // Set CORS and content headers
+    Object.keys(headers).forEach(key => {
+      res.setHeader(key, headers[key]);
+    });
+
+    // Forward content headers from the source
+    if (response.headers['content-type']) {
+      res.setHeader('Content-Type', response.headers['content-type']);
+    }
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
+
+    // Set appropriate status code
+    res.status(response.status);
+
+    // Pipe the image stream
+    response.data.pipe(res);
+
+  } catch (error) {
+    console.error('Poster proxy error:', error.message);
+
+    // Return a simple SVG placeholder image instead of JSON error
+    const placeholderSvg = `
+      <svg width="300" height="450" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#1a1a1a"/>
+        <rect x="10" y="10" width="280" height="430" fill="none" stroke="#333" stroke-width="2" stroke-dasharray="5,5"/>
+        <text x="150" y="200" text-anchor="middle" fill="#666" font-family="Arial" font-size="16">Movie Poster</text>
+        <text x="150" y="230" text-anchor="middle" fill="#666" font-family="Arial" font-size="12">Not Available</text>
+        <circle cx="150" cy="280" r="30" fill="none" stroke="#333" stroke-width="2"/>
+        <path d="M135 270 L150 285 L165 270" stroke="#333" stroke-width="2" fill="none"/>
+      </svg>
+    `;
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.status(200).send(placeholderSvg);
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({

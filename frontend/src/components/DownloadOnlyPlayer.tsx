@@ -39,7 +39,7 @@ export default function DownloadOnlyPlayer({ sources, poster, title, onDownload,
                 alt={title || 'Movie poster'}
                 fill
                 className="object-cover opacity-60"
-                unoptimized={poster.includes('discoveryftp.net')}
+                unoptimized={poster.includes('discoveryftp.net') || poster.includes('proxy/poster')}
               />
               <div className="absolute inset-0 bg-black bg-opacity-40" />
             </div>

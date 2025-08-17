@@ -111,7 +111,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
                             fill
                             className="object-cover"
                             sizes="(max-width: 1024px) 100vw, 33vw"
-                            unoptimized={movie.poster.includes('discoveryftp.net')}
+                            unoptimized={movie.poster.includes('discoveryftp.net') || movie.poster.includes('proxy/poster')}
                           />
                         </div>
                       )}

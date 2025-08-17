@@ -200,17 +200,78 @@ class ScraperService {
       }
     }
     
-    // Extract poster/thumbnail
-    const imgElement = element.find('img').first();
-    if (imgElement.length > 0) {
-      let src = imgElement.attr('src');
-      if (src) {
-        if (src.startsWith('/')) {
-          movie.poster = new URL(src, config.discovery.baseUrl).href;
-        } else if (src.startsWith('http')) {
-          movie.poster = src;
+    // Extract poster/thumbnail - Discovery FTP specific
+    const posterSelectors = [
+      '.poster img',           // Main poster image in poster div
+      'img[src*="poster"]',    // Any image with "poster" in src
+      'img[src*="media"]',     // Discovery FTP media images
+      '.card-img-top',         // Bootstrap card image
+      '.movie-poster',         // Common poster class
+      'img'                    // Fallback to any image
+    ];
+
+    let posterFound = false;
+    for (const selector of posterSelectors) {
+      const imgElement = element.find(selector).first();
+      if (imgElement.length > 0) {
+        let src = imgElement.attr('src');
+        if (src && !src.includes('blank_poster.png') && !src.includes('placeholder')) { // Skip placeholder images
+          let posterUrl;
+          if (src.startsWith('/')) {
+            posterUrl = new URL(src, config.discovery.baseUrl).href;
+          } else if (src.startsWith('http')) {
+            posterUrl = src;
+          }
+
+          // Use frontend API route to handle CORS and authentication
+          if (posterUrl) {
+            console.log(`Found poster URL for ${movie.title}: ${posterUrl}`);
+            movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(posterUrl)}`;
+            posterFound = true;
+            break; // Found a valid poster, stop looking
+          }
         }
       }
+    }
+
+    // If no poster found, try to construct one from the detail URL
+    if (!posterFound && movie.detailUrl) {
+      // Extract movie path from detail URL and construct poster URL
+      // Example: https://dflix.discoveryftp.net/m/Hindi/2025/Saiyaara -> poster at same location
+      try {
+        const detailPath = new URL(movie.detailUrl).pathname;
+        // Convert /m/Hindi/2025/Saiyaara to /Movies/Hindi/2025/Saiyaara/poster.jpg
+        const posterPath = detailPath.replace('/m/', '/Movies/') + '/poster.jpg';
+        const constructedPosterUrl = `https://content1.discoveryftp.net${posterPath}`;
+        console.log(`Constructed poster URL for ${movie.title}: ${constructedPosterUrl}`);
+        movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
+        posterFound = true;
+      } catch (error) {
+        console.log(`Failed to construct poster URL for ${movie.title}: ${error.message}`);
+      }
+    }
+
+    // Final fallback: Generate poster URL from movie title and year
+    if (!posterFound && movie.title && movie.year) {
+      // Try to construct poster URL based on Discovery FTP structure
+      const languages = ['Hindi', 'English', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Animation', 'Others'];
+
+      // Try to detect language from title or use a default
+      let detectedLanguage = 'Hindi'; // Default
+      for (const lang of languages) {
+        if (movie.title.includes(lang) || movie.language === lang) {
+          detectedLanguage = lang;
+          break;
+        }
+      }
+
+      // Clean title for URL (remove special characters, spaces)
+      const cleanTitle = movie.title.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+
+      // Construct potential poster URL
+      const constructedPosterUrl = `https://content1.discoveryftp.net/Movies/${detectedLanguage}/${movie.year}/${cleanTitle}/poster.jpg`;
+      console.log(`Final fallback poster URL for ${movie.title}: ${constructedPosterUrl}`);
+      movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
     }
     
     // Extract year - Discovery FTP specific
