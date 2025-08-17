@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Movie, SearchFilters } from '@/types/movie';
 import MovieAPI from '@/lib/api';
 
@@ -12,6 +12,8 @@ interface UseMoviesState {
 }
 
 export function useMovies() {
+  console.log('🎬 useMovies: Hook called!');
+  console.log('🎬 useMovies: typeof window:', typeof window);
   const [state, setState] = useState<UseMoviesState>({
     movies: [],
     loading: true,
@@ -19,22 +21,42 @@ export function useMovies() {
     lastUpdated: null,
   });
 
+  const [hasInitialized, setHasInitialized] = useState(false);
+
   const fetchMovies = useCallback(async () => {
+    console.log('🎬 fetchMovies: Starting to fetch movies...');
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+      console.log('🎬 fetchMovies: Setting loading state...');
+      setState(prev => {
+        console.log('🎬 fetchMovies: Previous state:', prev);
+        const newState = { ...prev, loading: true, error: null };
+        console.log('🎬 fetchMovies: New loading state:', newState);
+        return newState;
+      });
+      console.log('🎬 fetchMovies: Calling MovieAPI.getAllMovies()...');
       const movies = await MovieAPI.getAllMovies();
-      setState({
+      console.log(`🎬 fetchMovies: Received ${movies.length} movies from API`);
+      console.log('🎬 fetchMovies: First few movies:', movies.slice(0, 3));
+      console.log('🎬 fetchMovies: Setting movies state...');
+      const finalState = {
         movies,
         loading: false,
         error: null,
         lastUpdated: new Date(),
-      });
+      };
+      console.log('🎬 fetchMovies: Final state to set:', finalState);
+      setState(finalState);
+      console.log('🎬 fetchMovies: setState called with final state');
     } catch (error) {
-      setState(prev => ({
-        ...prev,
+      console.error('🎬 fetchMovies: Error occurred:', error);
+      const errorState = {
+        movies: [],
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch movies',
-      }));
+        lastUpdated: null,
+      };
+      console.log('🎬 fetchMovies: Error state to set:', errorState);
+      setState(errorState);
     }
   }, []);
 
@@ -57,9 +79,24 @@ export function useMovies() {
     }
   }, []);
 
-  useEffect(() => {
+  // Force initialization on client side
+  if (typeof window !== 'undefined' && !hasInitialized && state.movies.length === 0) {
+    console.log('🎬 useMovies: Forcing initialization...');
+    setHasInitialized(true);
     fetchMovies();
-  }, [fetchMovies]);
+  }
+
+  useEffect(() => {
+    console.log('🎬 useMovies: useEffect triggered!');
+    console.log('🎬 useMovies: typeof window:', typeof window);
+    console.log('🎬 useMovies: hasInitialized:', hasInitialized);
+
+    if (!hasInitialized) {
+      console.log('🎬 useMovies: Initializing from useEffect...');
+      setHasInitialized(true);
+      fetchMovies();
+    }
+  }, [hasInitialized, fetchMovies]);
 
   return {
     ...state,

@@ -3,6 +3,12 @@ import { Movie, ApiResponse, SearchFilters, ApiStatus } from '@/types/movie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+console.log('🔧 API Configuration:', {
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  API_BASE_URL,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
@@ -14,11 +20,12 @@ const apiClient = axios.create({
 // Request interceptor for logging
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    console.log('🌐 Full config:', { baseURL: config.baseURL, url: config.url, method: config.method });
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    console.error('❌ API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -47,10 +54,15 @@ apiClient.interceptors.response.use(
 export class MovieAPI {
   static async getAllMovies(): Promise<Movie[]> {
     try {
+      console.log('🎬 MovieAPI: Fetching all movies from backend...');
       const response = await apiClient.get<ApiResponse<Movie[]>>('/movies');
+      console.log('🎬 MovieAPI: Raw response:', response);
+      console.log('🎬 MovieAPI: Response data:', response.data);
+      console.log('🎬 MovieAPI: Response data.data:', response.data.data);
+      console.log(`🎬 MovieAPI: Successfully fetched ${response.data.data.length} movies`);
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching movies:', error);
+      console.error('❌ MovieAPI: Failed to fetch movies:', error);
       throw error;
     }
   }

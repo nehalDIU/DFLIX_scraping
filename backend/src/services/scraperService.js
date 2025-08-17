@@ -226,7 +226,8 @@ class ScraperService {
           // Use frontend API route to handle CORS and authentication
           if (posterUrl) {
             console.log(`Found poster URL for ${movie.title}: ${posterUrl}`);
-            movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(posterUrl)}`;
+            // Use a relative URL so the frontend origin/port doesn't matter
+            movie.poster = `/api/poster?url=${encodeURIComponent(posterUrl)}`;
             posterFound = true;
             break; // Found a valid poster, stop looking
           }
@@ -244,7 +245,7 @@ class ScraperService {
         const posterPath = detailPath.replace('/m/', '/Movies/') + '/poster.jpg';
         const constructedPosterUrl = `https://content1.discoveryftp.net${posterPath}`;
         console.log(`Constructed poster URL for ${movie.title}: ${constructedPosterUrl}`);
-        movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
+        movie.poster = `/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
         posterFound = true;
       } catch (error) {
         console.log(`Failed to construct poster URL for ${movie.title}: ${error.message}`);
@@ -271,7 +272,7 @@ class ScraperService {
       // Construct potential poster URL
       const constructedPosterUrl = `https://content1.discoveryftp.net/Movies/${detectedLanguage}/${movie.year}/${cleanTitle}/poster.jpg`;
       console.log(`Final fallback poster URL for ${movie.title}: ${constructedPosterUrl}`);
-      movie.poster = `http://localhost:3000/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
+      movie.poster = `/api/poster?url=${encodeURIComponent(constructedPosterUrl)}`;
     }
     
     // Extract year - Discovery FTP specific
