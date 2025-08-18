@@ -20,30 +20,33 @@ export default function Home() {
   const { movies, loading, error, refetch, refresh, lastUpdated } = useMovies();
   console.log(`🏠 Home: useMovies returned ${movies.length} movies, loading: ${loading}, error: ${error}`);
 
-  // Force a direct API call to test
-  if (typeof window !== 'undefined' && movies.length === 0 && loading) {
-    console.log('🏠 Home: Forcing direct API call...');
-    fetch('http://localhost:3001/api/movies')
-      .then(response => {
-        console.log('🏠 Home: Direct API response status:', response.status);
-        console.log('🏠 Home: Direct API response headers:', response.headers);
-        return response.json();
-      })
-      .then(data => {
-        console.log('🏠 Home: Direct API data structure:', typeof data);
-        console.log('🏠 Home: Direct API data keys:', Object.keys(data || {}));
-        console.log('🏠 Home: Direct API data.data type:', typeof data.data);
-        console.log('🏠 Home: Direct API movies count:', data.data?.length);
-        console.log('🏠 Home: Direct API first movie:', data.data?.[0]);
-      })
-      .catch(error => {
-        console.error('🏠 Home: Direct API error:', error);
-      });
-  }
+
 
   // Auto-test API after component mounts
   useEffect(() => {
     console.log('🏠 Home: useEffect triggered!');
+
+    // Test direct API call if needed
+    if (movies.length === 0 && loading) {
+      console.log('🏠 Home: Testing direct API call...');
+      fetch('http://localhost:3001/api/movies')
+        .then(response => {
+          console.log('🏠 Home: Direct API response status:', response.status);
+          console.log('🏠 Home: Direct API response headers:', response.headers);
+          return response.json();
+        })
+        .then(data => {
+          console.log('🏠 Home: Direct API data structure:', typeof data);
+          console.log('🏠 Home: Direct API data keys:', Object.keys(data || {}));
+          console.log('🏠 Home: Direct API data.data type:', typeof data.data);
+          console.log('🏠 Home: Direct API movies count:', data.data?.length);
+          console.log('🏠 Home: Direct API first movie:', data.data?.[0]);
+        })
+        .catch(error => {
+          console.error('🏠 Home: Direct API error:', error);
+        });
+    }
+
     const timer = setTimeout(async () => {
       console.log('🏠 Home: Auto-testing API...');
       try {
@@ -57,7 +60,7 @@ export default function Home() {
       }
     }, 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [movies.length, loading]);
   const { movies: searchResults, searchMovies, clearSearch, loading: searchLoading } = useMovieSearch();
 
   const handleTestAPI = async () => {

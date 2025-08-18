@@ -79,19 +79,12 @@ export function useMovies() {
     }
   }, []);
 
-  // Force initialization on client side
-  if (typeof window !== 'undefined' && !hasInitialized && state.movies.length === 0) {
-    console.log('🎬 useMovies: Forcing initialization...');
-    setHasInitialized(true);
-    fetchMovies();
-  }
-
   useEffect(() => {
     console.log('🎬 useMovies: useEffect triggered!');
     console.log('🎬 useMovies: typeof window:', typeof window);
     console.log('🎬 useMovies: hasInitialized:', hasInitialized);
 
-    if (!hasInitialized) {
+    if (typeof window !== 'undefined' && !hasInitialized) {
       console.log('🎬 useMovies: Initializing from useEffect...');
       setHasInitialized(true);
       fetchMovies();

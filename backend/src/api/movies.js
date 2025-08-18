@@ -33,6 +33,57 @@ router.get('/movies', async (req, res) => {
 });
 
 /**
+ * GET /api/movies/debug
+ * Debug endpoint to check video content status
+ */
+router.get('/movies/debug', (req, res) => {
+  try {
+    const movies = scraperService.getMovies();
+
+    // Get sample of movies with and without video
+    const moviesWithVideo = movies.filter(movie => movie.downloadUrls && movie.downloadUrls.length > 0);
+    const moviesWithoutVideo = movies.filter(movie => !movie.downloadUrls || movie.downloadUrls.length === 0);
+
+    // Sample movies for debugging
+    const sampleWithVideo = moviesWithVideo.slice(0, 3).map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      year: movie.year,
+      downloadUrlsCount: movie.downloadUrls ? movie.downloadUrls.length : 0,
+      downloadUrlsType: Array.isArray(movie.downloadUrls) ? 'array' : typeof movie.downloadUrls,
+      firstDownloadUrl: movie.downloadUrls && movie.downloadUrls.length > 0 ? movie.downloadUrls[0] : null
+    }));
+
+    const sampleWithoutVideo = moviesWithoutVideo.slice(0, 3).map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      year: movie.year,
+      downloadUrlsCount: movie.downloadUrls ? movie.downloadUrls.length : 0,
+      downloadUrlsType: Array.isArray(movie.downloadUrls) ? 'array' : typeof movie.downloadUrls,
+      downloadUrls: movie.downloadUrls
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        totalMovies: movies.length,
+        moviesWithVideo: moviesWithVideo.length,
+        moviesWithoutVideo: moviesWithoutVideo.length,
+        sampleWithVideo,
+        sampleWithoutVideo
+      }
+    });
+  } catch (error) {
+    console.error('Error in debug endpoint:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get debug info',
+      message: error.message
+    });
+  }
+});
+
+/**
  * GET /api/movies/:id
  * Returns a specific movie by ID
  */
@@ -41,14 +92,14 @@ router.get('/movies/:id', async (req, res) => {
     const { id } = req.params;
     const movies = scraperService.getMovies();
     const movie = movies.find(m => m.id === id);
-    
+
     if (!movie) {
       return res.status(404).json({
         success: false,
         error: 'Movie not found'
       });
     }
-    
+
     res.json({
       success: true,
       data: movie
@@ -71,7 +122,7 @@ router.post('/movies/refresh', async (req, res) => {
   try {
     console.log('Manual refresh triggered');
     const movies = await scraperService.scrapeMovies();
-    
+
     res.json({
       success: true,
       message: 'Movies refreshed successfully',
@@ -90,6 +141,134 @@ router.post('/movies/refresh', async (req, res) => {
     });
   }
 });
+
+/**
+ * POST /api/movies/enrich/:id
+ * Manually trigger enrichment for a specific movie
+ */
+router.post('/movies/enrich/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const movies = scraperService.getMovies();
+    const movie = movies.find(m => m.id === id);
+
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        error: 'Movie not found'
+      });
+    }
+
+    console.log(`Manual enrichment triggered for movie: ${movie.title}`);
+
+    // Create authenticated client
+    const authService = require('../services/authService');
+    await authService.ensureAuthenticated();
+    const client = authService.getClient();
+
+    // Enrich the movie data
+    await scraperService.enrichMovieData(client, movie);
+
+    res.json({
+      success: true,
+      message: `Movie "${movie.title}" enriched successfully`,
+      data: movie,
+      meta: {
+        videoLinksFound: movie.downloadUrls.length
+      }
+    });
+  } catch (error) {
+    console.error('Error enriching movie:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enrich movie',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/movies/enrich-all
+ * Manually trigger enrichment for all movies without video content
+ */
+router.post('/movies/enrich-all', async (req, res) => {
+  try {
+    console.log('Manual enrichment triggered for all movies without video content');
+
+    const movies = scraperService.getMovies();
+    const moviesWithoutVideo = movies.filter(movie => !movie.downloadUrls || movie.downloadUrls.length === 0);
+
+    console.log(`Found ${moviesWithoutVideo.length} movies without video content out of ${movies.length} total movies`);
+
+    if (moviesWithoutVideo.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All movies already have video content',
+        meta: {
+          totalMovies: movies.length,
+          moviesEnriched: 0,
+          moviesWithVideo: movies.length
+        }
+      });
+    }
+
+    // Create authenticated client
+    const authService = require('../services/authService');
+    await authService.ensureAuthenticated();
+    const client = authService.getClient();
+
+    let enrichedCount = 0;
+    let errorCount = 0;
+
+    // Process movies in batches to avoid overwhelming the server
+    const batchSize = 5;
+    for (let i = 0; i < moviesWithoutVideo.length; i += batchSize) {
+      const batch = moviesWithoutVideo.slice(i, i + batchSize);
+
+      await Promise.all(batch.map(async (movie) => {
+        try {
+          console.log(`Enriching movie ${i + batch.indexOf(movie) + 1}/${moviesWithoutVideo.length}: ${movie.title}`);
+          await scraperService.enrichMovieData(client, movie);
+          if (movie.downloadUrls && movie.downloadUrls.length > 0) {
+            enrichedCount++;
+          }
+        } catch (error) {
+          console.error(`Error enriching movie ${movie.title}:`, error.message);
+          errorCount++;
+        }
+      }));
+
+      // Small delay between batches
+      if (i + batchSize < moviesWithoutVideo.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    const finalMoviesWithVideo = movies.filter(movie => movie.downloadUrls && movie.downloadUrls.length > 0).length;
+
+    res.json({
+      success: true,
+      message: `Enrichment completed. ${enrichedCount} movies now have video content.`,
+      meta: {
+        totalMovies: movies.length,
+        moviesProcessed: moviesWithoutVideo.length,
+        moviesEnriched: enrichedCount,
+        errors: errorCount,
+        moviesWithVideo: finalMoviesWithVideo,
+        moviesWithoutVideo: movies.length - finalMoviesWithVideo
+      }
+    });
+  } catch (error) {
+    console.error('Error enriching all movies:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enrich movies',
+      message: error.message
+    });
+  }
+});
+
+
 
 /**
  * GET /api/movies/search

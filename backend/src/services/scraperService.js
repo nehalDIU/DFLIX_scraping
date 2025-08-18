@@ -89,20 +89,6 @@ class ScraperService {
         }
       });
       
-      // If we found movies, also try to get additional details for each
-      for (const movie of movies) {
-        if (movie.detailUrl) {
-          try {
-            await this.enrichMovieData(client, movie);
-          } catch (error) {
-            console.error(`Error enriching movie data for ${movie.title}:`, error.message);
-          }
-        }
-      }
-      
-      this.moviesCache = movies;
-      this.lastScrapeTime = new Date();
-      
       console.log(`Successfully scraped ${movies.length} movies from main page`);
 
       // Check for pagination and scrape additional pages
@@ -112,6 +98,34 @@ class ScraperService {
       // Also try to scrape common directory structures
       const directoryMovies = await this.scrapeDirectoryStructure(client);
       movies.push(...directoryMovies);
+
+      // Now enrich ALL movies (main page + pagination + directory) with video data
+      console.log(`Starting enrichment process for ${movies.length} total movies...`);
+      let enrichedCount = 0;
+      let processedCount = 0;
+
+      for (const movie of movies) {
+        if (movie.detailUrl) {
+          try {
+            processedCount++;
+            console.log(`Enriching movie ${processedCount}/${movies.length}: ${movie.title}`);
+            await this.enrichMovieData(client, movie);
+            if (movie.downloadUrls && movie.downloadUrls.length > 0) {
+              enrichedCount++;
+            }
+
+            // Add delay between requests to avoid overwhelming the server
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (error) {
+            console.error(`Error enriching movie data for ${movie.title}:`, error.message);
+          }
+        }
+      }
+
+      console.log(`Enrichment completed: ${enrichedCount} movies now have video content out of ${movies.length} total movies`);
+
+      this.moviesCache = movies;
+      this.lastScrapeTime = new Date();
 
       // Remove duplicates based on title and year
       const uniqueMovies = this.deduplicateMovies(movies);
@@ -755,13 +769,16 @@ class ScraperService {
     if (!movie.detailUrl || this.isDirectVideoFile(movie.detailUrl)) {
       return; // Skip if it's a direct download link
     }
-    
+
     try {
+      console.log(`Enriching movie data for: ${movie.title} (${movie.detailUrl})`);
       const detailResponse = await client.get(movie.detailUrl);
       const $ = cheerio.load(detailResponse.data);
-      
+
       // Enhanced download link detection with better format support
       const downloadLinks = [];
+
+      // Primary video selectors - look for direct video file links
       const videoSelectors = [
         'a[href*=".mp4"]', 'a[href*=".mkv"]', 'a[href*=".avi"]',
         'a[href*=".webm"]', 'a[href*=".mov"]', 'a[href*=".wmv"]',
@@ -781,24 +798,111 @@ class ScraperService {
 
           downloadLinks.push({
             ...videoInfo,
-            label: text
+            label: text || 'Download'
           });
         }
       });
-      
+
+      // Fallback 1: Look for download buttons or links with common download text
+      if (downloadLinks.length === 0) {
+        const downloadSelectors = [
+          'a:contains("Download")', 'a:contains("download")',
+          'a:contains("Watch")', 'a:contains("watch")',
+          'a:contains("Play")', 'a:contains("play")',
+          '.download-btn', '.download-link', '.watch-btn',
+          'button[onclick*="download"]', 'a[onclick*="download"]'
+        ];
+
+        downloadSelectors.forEach(selector => {
+          try {
+            $(selector).each((i, link) => {
+              const href = $(link).attr('href') || $(link).attr('onclick');
+              if (href && (href.includes('.mp4') || href.includes('.mkv') || href.includes('.avi'))) {
+                let fullUrl = href;
+                if (href.startsWith('/')) {
+                  fullUrl = new URL(href, config.discovery.baseUrl).href;
+                }
+
+                const text = $(link).text().trim();
+                const videoInfo = this.analyzeVideoFile(fullUrl, { title: text });
+
+                downloadLinks.push({
+                  ...videoInfo,
+                  label: text || 'Download'
+                });
+              }
+            });
+          } catch (e) {
+            // Ignore selector errors
+          }
+        });
+      }
+
+      // Fallback 2: Look for any links that might contain video URLs in their href or data attributes
+      if (downloadLinks.length === 0) {
+        $('a').each((i, link) => {
+          const href = $(link).attr('href');
+          const dataUrl = $(link).attr('data-url') || $(link).attr('data-src');
+          const url = href || dataUrl;
+
+          if (url && this.isDirectVideoFile(url)) {
+            let fullUrl = url;
+            if (url.startsWith('/')) {
+              fullUrl = new URL(url, config.discovery.baseUrl).href;
+            }
+
+            const text = $(link).text().trim();
+            const videoInfo = this.analyzeVideoFile(fullUrl, { title: text });
+
+            downloadLinks.push({
+              ...videoInfo,
+              label: text || 'Download'
+            });
+          }
+        });
+      }
+
+      // Fallback 3: Look for embedded video sources or iframe sources
+      if (downloadLinks.length === 0) {
+        $('video source, iframe').each((i, element) => {
+          const src = $(element).attr('src');
+          if (src && this.isDirectVideoFile(src)) {
+            let fullUrl = src;
+            if (src.startsWith('/')) {
+              fullUrl = new URL(src, config.discovery.baseUrl).href;
+            }
+
+            const videoInfo = this.analyzeVideoFile(fullUrl, { title: movie.title });
+
+            downloadLinks.push({
+              ...videoInfo,
+              label: 'Stream'
+            });
+          }
+        });
+      }
+
       movie.downloadUrls = downloadLinks;
-      
+
+      console.log(`Found ${downloadLinks.length} video links for ${movie.title}`);
+      if (downloadLinks.length === 0) {
+        console.warn(`No video links found for ${movie.title} at ${movie.detailUrl}`);
+        // Log some of the page content for debugging
+        const allLinks = $('a').map((i, el) => $(el).attr('href')).get().slice(0, 10);
+        console.log(`Sample links from page: ${allLinks.join(', ')}`);
+      }
+
       // Look for additional metadata
       const description = $('.description, .synopsis, .plot').first().text().trim();
       if (description) {
         movie.description = description;
       }
-      
+
       const rating = $('.rating, .imdb-rating').first().text().trim();
       if (rating) {
         movie.rating = rating;
       }
-      
+
       // Extract genres
       $('.genre, .genres').each((i, genreElement) => {
         const genre = $(genreElement).text().trim();
@@ -806,7 +910,7 @@ class ScraperService {
           movie.genres.push(genre);
         }
       });
-      
+
     } catch (error) {
       console.error(`Error enriching movie ${movie.title}:`, error.message);
     }
@@ -824,9 +928,40 @@ class ScraperService {
    * Checks if URL points to a direct video file
    */
   isDirectVideoFile(url) {
-    const videoExtensions = ['.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.m4v', '.flv', '.ogg'];
+    if (!url || typeof url !== 'string') return false;
+
+    const videoExtensions = [
+      '.mp4', '.mkv', '.avi', '.webm', '.mov', '.wmv', '.m4v', '.flv', '.ogg',
+      '.mpg', '.mpeg', '.3gp', '.ts', '.m2ts', '.vob', '.asf', '.rm', '.rmvb'
+    ];
+
     const lowerUrl = url.toLowerCase();
-    return videoExtensions.some(ext => lowerUrl.includes(ext));
+
+    // Check for direct file extensions
+    const hasVideoExtension = videoExtensions.some(ext => {
+      // Check if URL ends with extension or has extension followed by query params
+      return lowerUrl.includes(ext) && (
+        lowerUrl.endsWith(ext) ||
+        lowerUrl.includes(ext + '?') ||
+        lowerUrl.includes(ext + '&') ||
+        lowerUrl.includes(ext + '#')
+      );
+    });
+
+    // Additional patterns that might indicate video content
+    const videoPatterns = [
+      /\/video\//i,
+      /\/stream\//i,
+      /\/download\//i,
+      /\/media\//i,
+      /\.mp4\b/i,
+      /\.mkv\b/i,
+      /\.avi\b/i
+    ];
+
+    const hasVideoPattern = videoPatterns.some(pattern => pattern.test(url));
+
+    return hasVideoExtension || hasVideoPattern;
   }
 
   /**

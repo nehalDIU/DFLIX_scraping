@@ -1,7 +1,7 @@
 'use client';
 
 import { Movie } from '@/types/movie';
-import { Play, Download, Calendar, Globe, Star } from 'lucide-react';
+import { Play, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 
 interface MovieCardProps {
@@ -102,10 +102,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
     return title.replace(/\(\d{4}\)/, '').trim();
   };
 
-  const formatFileSize = (size: string) => {
-    if (!size) return '';
-    return size.replace(/\s+/g, ' ').trim();
-  };
+
 
   return (
     <div
@@ -165,41 +162,20 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
       </div>
 
       {/* Movie Info */}
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-3">
         {/* Title */}
-        <h3 className="text-white font-semibold text-sm line-clamp-2 group-hover:text-blue-400 transition-colors">
+        <h3 className="text-white font-semibold text-base line-clamp-2 group-hover:text-blue-400 transition-colors leading-tight">
           {formatTitle(movie.title)}
         </h3>
 
-        {/* Year and Language */}
-        <div className="flex items-center gap-2 text-xs text-gray-400">
-          {movie.year && (
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              <span>{movie.year}</span>
-            </div>
-          )}
-          {movie.language && (
+        {/* Language */}
+        {movie.language && (
+          <div className="flex justify-start">
             <div className={`${getLanguageBadgeColor(movie.language)} text-white px-2 py-1 rounded text-xs font-medium`}>
               {movie.language}
             </div>
-          )}
-        </div>
-
-        {/* File Size and Download Count */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          {movie.size && (
-            <span className="bg-gray-800 px-2 py-1 rounded">
-              {formatFileSize(movie.size)}
-            </span>
-          )}
-          {movie.downloadUrls.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Download className="w-3 h-3" />
-              <span>{movie.downloadUrls.length} link{movie.downloadUrls.length !== 1 ? 's' : ''}</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Genres */}
         {movie.genres.length > 0 && (
