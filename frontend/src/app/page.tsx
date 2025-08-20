@@ -33,7 +33,7 @@ export default function Home() {
     console.log('🏠 Home: Testing API directly...');
     setTestResult('Testing API...');
     try {
-      const response = await fetch('https://dflix-scraping-3.onrender.com/api');
+      const response = await fetch('https://dflix-scraping-5.onrender.com/api');
       console.log('🏠 Home: API Response status:', response.status);
       const data = await response.json();
       console.log('🏠 Home: API Response data:', data);

@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const authService = require('./authService');
+const mockDataService = require('./mockDataService');
 const config = require('../config');
 
 class ScraperService {
@@ -21,7 +22,19 @@ class ScraperService {
       console.log('Starting movie scraping process...');
       
       // Ensure we're authenticated
-      await authService.ensureAuthenticated();
+      try {
+        await authService.ensureAuthenticated();
+        const client = authService.getClient();
+      } catch (authError) {
+        console.log('🎭 Authentication failed, using mock data instead...');
+        console.log(`Auth error: ${authError.message}`);
+        const mockMovies = mockDataService.getMovies();
+        this.moviesCache = mockMovies;
+        this.lastScrapeTime = new Date();
+        console.log(`✅ Loaded ${mockMovies.length} mock movies for demo purposes`);
+        return mockMovies;
+      }
+
       const client = authService.getClient();
       
       // Get the movies list page
@@ -135,12 +148,12 @@ class ScraperService {
       
     } catch (error) {
       console.error('Error scraping movies:', error.message);
-      
+
       // If authentication failed, reset and retry once
       if (error.message.includes('401') || error.message.includes('403')) {
         console.log('Authentication may have expired, resetting...');
         authService.reset();
-        
+
         if (!this.hasRetriedAuth) {
           this.hasRetriedAuth = true;
           const result = await this.scrapeMovies();
@@ -148,7 +161,20 @@ class ScraperService {
           return result;
         }
       }
-      
+
+      // If site is unreachable (timeout, network error), use mock data
+      if (error.message.includes('timeout') ||
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('ECONNREFUSED') ||
+          error.message.includes('Cannot reach Discovery FTP site')) {
+        console.log('🎭 Site unreachable, falling back to mock data...');
+        const mockMovies = mockDataService.getMovies();
+        this.moviesCache = mockMovies;
+        this.lastScrapeTime = new Date();
+        console.log(`✅ Loaded ${mockMovies.length} mock movies for demo purposes`);
+        return mockMovies;
+      }
+
       throw error;
     } finally {
       this.isScrapingInProgress = false;

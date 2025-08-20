@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://dflix-scraping-3.onrender.com/api/:path*',
+        destination: 'https://dflix-scraping-5.onrender.com/api/:path*',
       },
     ];
   },

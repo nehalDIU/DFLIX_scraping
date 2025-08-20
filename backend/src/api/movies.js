@@ -1,6 +1,7 @@
 const express = require('express');
 const scraperService = require('../services/scraperService');
 const authService = require('../services/authService');
+const mockDataService = require('../services/mockDataService');
 
 const router = express.Router();
 
@@ -330,7 +331,11 @@ router.get('/status', async (req, res) => {
   try {
     const movies = scraperService.getMovies();
     const lastScrapeTime = scraperService.getLastScrapeTime();
-    
+    const mockMovies = mockDataService.getMovies();
+
+    // Check if we're using mock data by comparing movie IDs
+    const usingMockData = movies.length > 0 && movies.some(movie => movie.id && movie.id.startsWith('mock-'));
+
     res.json({
       success: true,
       status: 'operational',
@@ -340,7 +345,10 @@ router.get('/status', async (req, res) => {
         moviesCount: movies.length,
         lastScrapeTime: lastScrapeTime,
         uptime: process.uptime(),
-        version: require('../../package.json').version
+        version: require('../../package.json').version,
+        usingMockData: usingMockData,
+        mockDataAvailable: mockMovies.length,
+        dataSource: usingMockData ? 'Mock Data (Site Unreachable)' : 'Live Discovery FTP Site'
       }
     });
   } catch (error) {
