@@ -7,10 +7,12 @@ import MovieGrid from '@/components/MovieGrid';
 import SearchBar from '@/components/SearchBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorBoundary';
+import { useVideoPlayer } from '@/contexts/VideoPlayerContext';
 
 export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [testResult, setTestResult] = useState<string>('');
+  const { showPlayer, hidePlayer, togglePlayer, state } = useVideoPlayer();
 
   console.log('🏠 Home: Component rendering...');
   console.log('🏠 Home: About to call useMovies...');
@@ -120,14 +122,37 @@ export default function Home() {
           totalMovies={displayMovies.length}
           lastUpdated={lastUpdated}
         />
-        {/* Test Button */}
-        <div className="mt-4">
+        {/* Test Buttons */}
+        <div className="mt-4 flex gap-4">
           <button
             onClick={handleTestAPI}
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           >
             Test API Call
           </button>
+          <button
+            onClick={() => showPlayer({
+              title: "Big Buck Bunny Demo",
+              videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            })}
+            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Show Video Player
+          </button>
+          <button
+            onClick={togglePlayer}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Toggle Player
+          </button>
+          {state.isVisible && (
+            <button
+              onClick={hidePlayer}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Hide Player
+            </button>
+          )}
           {testResult && (
             <div className="mt-2 p-2 bg-gray-100 rounded">
               <p className="text-sm">{testResult}</p>

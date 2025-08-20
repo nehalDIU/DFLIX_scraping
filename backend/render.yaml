@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: discovery-ftp-scraper-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DISCOVERY_BASE_URL
+        value: https://dflix.discoveryftp.net
+      - key: LOGIN_URL
+        value: https://dflix.discoveryftp.net/login
+      - key: MOVIES_URL
+        value: https://dflix.discoveryftp.net/m
+      - key: SCRAPE_INTERVAL_MINUTES
+        value: 30
+      - key: MAX_RETRIES
+        value: 3
+      - key: REQUEST_TIMEOUT
+        value: 30000
+      - key: USER_AGENT
+        value: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
+      - key: LOG_LEVEL
+        value: info
+    # Auto-deploy from main branch
+    autoDeploy: true
+    # Health check configuration
+    healthCheck:
+      path: /health
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    # Resource limits for free tier
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

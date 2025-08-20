@@ -33,6 +33,12 @@ const nextConfig: NextConfig = {
         port: '3001',
         pathname: '/proxy/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.onrender.com',
+        port: '',
+        pathname: '/proxy/**',
+      },
     ],
   },
   // Enable experimental features for better performance

@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Header from "@/components/Header";
+import CollapsibleVideoPlayer from "@/components/CollapsibleVideoPlayer";
+import { VideoPlayerProvider } from "@/contexts/VideoPlayerContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,12 +23,16 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-black text-white antialiased`}>
         <ErrorBoundary>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
+          <VideoPlayerProvider>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+              {/* Collapsible Video Player - positioned at bottom */}
+              <CollapsibleVideoPlayer />
+            </div>
+          </VideoPlayerProvider>
         </ErrorBoundary>
       </body>
     </html>

@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "jest"
+    "test": "jest",
+    "build": "echo 'No build step required for Node.js'",
+    "deploy:render": "echo 'Push to main branch to deploy to Render'",
+    "health-check": "curl -f http://localhost:3001/health || exit 1",
+    "logs": "echo 'Check Render dashboard for logs'"
   },
   "keywords": ["scraper", "movies", "api", "express", "discovery"],
   "author": "",

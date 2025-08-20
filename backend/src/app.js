@@ -15,10 +15,26 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const getAllowedOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    const origins = [
+      process.env.FRONTEND_URL, // Your Vercel frontend URL
+      'https://your-frontend-app.vercel.app', // Default placeholder
+    ].filter(Boolean); // Remove any undefined values
+
+    console.log('🔒 Production CORS origins:', origins);
+    return origins;
+  } else {
+    return [
+      'http://localhost:3000',
+      'http://localhost:3004',
+      'http://localhost:3001'
+    ]; // Allow common dev ports
+  }
+};
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://yourdomain.com'] // Replace with your frontend domain
-    : ['http://localhost:3000', 'http://localhost:3004', 'http://localhost:3001'], // Allow common dev ports
+  origin: getAllowedOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Range'],
