@@ -4,14 +4,11 @@ import { useState, useEffect } from 'react';
 import { Movie, SearchFilters } from '@/types/movie';
 import { useMovies, useMovieSearch } from '@/hooks/useMovies';
 import MovieGrid from '@/components/MovieGrid';
-import MovieModal from '@/components/MovieModal';
 import SearchBar from '@/components/SearchBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorBoundary';
 
 export default function Home() {
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [testResult, setTestResult] = useState<string>('');
 
@@ -79,15 +76,7 @@ export default function Home() {
     }
   };
 
-  const handleMovieClick = (movie: Movie) => {
-    setSelectedMovie(movie);
-    setIsModalOpen(true);
-  };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedMovie(null);
-  };
 
   const handleSearch = async (filters: SearchFilters) => {
     if (!filters.query && !filters.year && !filters.language && !filters.quality) {
@@ -159,18 +148,10 @@ export default function Home() {
       ) : (
         <MovieGrid
           movies={displayMovies}
-          onMovieClick={handleMovieClick}
           loading={false}
           error={null}
         />
       )}
-
-      {/* Movie Modal */}
-      <MovieModal
-        movie={selectedMovie}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Film } from 'lucide-react';
 
 interface MovieGridProps {
   movies: Movie[];
-  onMovieClick: (movie: Movie) => void;
+  onMovieClick?: (movie: Movie) => void;
   loading?: boolean;
   error?: string | null;
 }
@@ -68,7 +68,7 @@ export default function MovieGrid({ movies, onMovieClick, loading, error }: Movi
         <MovieCard
           key={movie.id}
           movie={movie}
-          onClick={() => onMovieClick(movie)}
+          onClick={onMovieClick ? () => onMovieClick(movie) : undefined}
         />
       ))}
     </div>

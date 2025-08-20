@@ -1,7 +1,7 @@
 'use client';
 
 import { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -67,14 +67,18 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export function ErrorMessage({ 
-  title = 'Error', 
-  message, 
-  onRetry 
-}: { 
-  title?: string; 
-  message: string; 
-  onRetry?: () => void; 
+export function ErrorMessage({
+  title = 'Error',
+  message,
+  onRetry,
+  showBackButton = false,
+  onBack
+}: {
+  title?: string;
+  message: string;
+  onRetry?: () => void;
+  showBackButton?: boolean;
+  onBack?: () => void;
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -84,14 +88,25 @@ export function ErrorMessage({
         </div>
         <h3 className="text-red-400 font-semibold text-lg mb-2">{title}</h3>
         <p className="text-red-300 text-sm mb-4">{message}</p>
-        {onRetry && (
-          <button 
-            onClick={onRetry}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            Try Again
-          </button>
-        )}
+        <div className="flex flex-col gap-3">
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          )}
+          {showBackButton && onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mx-auto"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Go Back
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

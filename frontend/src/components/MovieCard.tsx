@@ -3,10 +3,11 @@
 import { Movie } from '@/types/movie';
 import { Play, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 
 interface MovieCardProps {
   movie: Movie;
-  onClick: () => void;
+  onClick?: () => void; // Made optional for backward compatibility
 }
 
 export default function MovieCard({ movie, onClick }: MovieCardProps) {
@@ -105,10 +106,11 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
 
 
   return (
-    <div
-      className="group relative bg-gray-900 rounded-lg overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:z-10 hover:shadow-2xl"
-      onClick={onClick}
-    >
+    <Link href={`/movie/${movie.id}`} className="block">
+      <div
+        className="group relative bg-gray-900 rounded-lg overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:z-10 hover:shadow-2xl"
+        onClick={onClick}
+      >
       {/* Poster Image */}
       <div className="relative aspect-[2/3] bg-gray-800">
         {!imageError && posterCandidates.length > 0 ? (
@@ -195,8 +197,9 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
         )}
       </div>
 
-      {/* Hover effect border */}
-      <div className="absolute inset-0 border-2 border-transparent group-hover:border-blue-500 rounded-lg transition-colors duration-300 pointer-events-none"></div>
-    </div>
+        {/* Hover effect border */}
+        <div className="absolute inset-0 border-2 border-transparent group-hover:border-blue-500 rounded-lg transition-colors duration-300 pointer-events-none"></div>
+      </div>
+    </Link>
   );
 }
