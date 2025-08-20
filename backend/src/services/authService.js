@@ -30,8 +30,21 @@ class AuthService {
   async authenticate() {
     try {
       console.log('Starting authentication process...');
-      
+      console.log(`Target login URL: ${config.discovery.loginUrl}`);
+      console.log(`Request timeout: ${config.scraping.requestTimeout}ms`);
+
+      // Step 0: Test basic connectivity
+      console.log('Step 0: Testing basic connectivity...');
+      try {
+        const connectivityTest = await this.client.get(config.discovery.baseUrl, { timeout: 10000 });
+        console.log(`Connectivity test status: ${connectivityTest.status}`);
+      } catch (connectError) {
+        console.error('Connectivity test failed:', connectError.message);
+        throw new Error(`Cannot reach Discovery FTP site: ${connectError.message}`);
+      }
+
       // Step 1: GET the login page
+      console.log('Step 1: Fetching login page...');
       const loginPageResponse = await this.client.get(config.discovery.loginUrl);
       console.log(`Login page status: ${loginPageResponse.status}`);
       

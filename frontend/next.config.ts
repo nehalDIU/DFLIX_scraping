@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Proxy API requests to avoid CORS issues in development
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://dflix-scraping-3.onrender.com/api/:path*',
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -16,20 +16,26 @@ app.use(helmet({
 
 // CORS configuration
 const getAllowedOrigins = () => {
+  const baseOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3004',
+    'http://localhost:3001'
+  ];
+
   if (process.env.NODE_ENV === 'production') {
-    const origins = [
+    const productionOrigins = [
       process.env.FRONTEND_URL, // Your Vercel frontend URL
       'https://your-frontend-app.vercel.app', // Default placeholder
-    ].filter(Boolean); // Remove any undefined values
+    ].filter(Boolean);
 
-    console.log('🔒 Production CORS origins:', origins);
-    return origins;
+    // Always allow localhost in production for development purposes
+    const allOrigins = [...baseOrigins, ...productionOrigins];
+
+    console.log('🔒 Production CORS origins:', allOrigins);
+    return allOrigins;
   } else {
-    return [
-      'http://localhost:3000',
-      'http://localhost:3004',
-      'http://localhost:3001'
-    ]; // Allow common dev ports
+    console.log('🔒 Development CORS origins:', baseOrigins);
+    return baseOrigins;
   }
 };
 

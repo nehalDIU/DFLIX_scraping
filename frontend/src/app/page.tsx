@@ -8,6 +8,7 @@ import SearchBar from '@/components/SearchBar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorBoundary';
 import { useVideoPlayer } from '@/contexts/VideoPlayerContext';
+import MovieAPI from '@/lib/api';
 
 export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
@@ -24,49 +25,15 @@ export default function Home() {
   // Auto-test API after component mounts
   useEffect(() => {
     console.log('🏠 Home: useEffect triggered!');
-
-    // Test direct API call if needed
-    if (movies.length === 0 && loading) {
-      console.log('🏠 Home: Testing direct API call...');
-      fetch('http://localhost:3001/api/movies')
-        .then(response => {
-          console.log('🏠 Home: Direct API response status:', response.status);
-          console.log('🏠 Home: Direct API response headers:', response.headers);
-          return response.json();
-        })
-        .then(data => {
-          console.log('🏠 Home: Direct API data structure:', typeof data);
-          console.log('🏠 Home: Direct API data keys:', Object.keys(data || {}));
-          console.log('🏠 Home: Direct API data.data type:', typeof data.data);
-          console.log('🏠 Home: Direct API movies count:', data.data?.length);
-          console.log('🏠 Home: Direct API first movie:', data.data?.[0]);
-        })
-        .catch(error => {
-          console.error('🏠 Home: Direct API error:', error);
-        });
-    }
-
-    const timer = setTimeout(async () => {
-      console.log('🏠 Home: Auto-testing API...');
-      try {
-        const response = await fetch('http://localhost:3001/api/movies');
-        console.log('🏠 Home: Direct fetch response status:', response.status);
-        const data = await response.json();
-        console.log('🏠 Home: Direct fetch data length:', data.data?.length);
-        console.log('🏠 Home: Direct fetch first movie:', data.data?.[0]);
-      } catch (error) {
-        console.error('🏠 Home: Direct fetch error:', error);
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [movies.length, loading]);
+    console.log('🏠 Home: Movies loaded:', movies.length, 'Loading:', loading, 'Error:', error);
+  }, [movies.length, loading, error]);
   const { movies: searchResults, searchMovies, clearSearch, loading: searchLoading } = useMovieSearch();
 
   const handleTestAPI = async () => {
     console.log('🏠 Home: Testing API directly...');
     setTestResult('Testing API...');
     try {
-      const response = await fetch('http://localhost:3001/api/movies');
+      const response = await fetch('https://dflix-scraping-3.onrender.com/api');
       console.log('🏠 Home: API Response status:', response.status);
       const data = await response.json();
       console.log('🏠 Home: API Response data:', data);
@@ -75,6 +42,60 @@ export default function Home() {
     } catch (error) {
       console.error('🏠 Home: API Test error:', error);
       setTestResult(`❌ API Error: ${error}`);
+    }
+  };
+
+  const handleAuthenticate = async () => {
+    console.log('🏠 Home: Triggering authentication...');
+    setTestResult('Authenticating...');
+    try {
+      const response = await fetch('/api/auth/login', { method: 'POST' });
+      const data = await response.json();
+
+      if (response.ok) {
+        setTestResult('✅ Authentication successful!');
+        console.log('Auth success:', data);
+      } else {
+        setTestResult(`❌ Authentication failed: ${data.message || data.error}`);
+        console.error('Auth failed:', data);
+      }
+    } catch (error) {
+      console.error('🏠 Home: Authentication error:', error);
+      setTestResult(`❌ Authentication Error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleRefreshMovies = async () => {
+    console.log('🏠 Home: Refreshing movies...');
+    setTestResult('Refreshing movies...');
+    try {
+      const movies = await MovieAPI.refreshMovies();
+      setTestResult(`✅ Movies refreshed! Found ${movies.length} movies.`);
+      // Trigger a refetch of the movies in the UI
+      refetch();
+    } catch (error) {
+      console.error('🏠 Home: Refresh error:', error);
+      setTestResult(`❌ Refresh Error: ${error}`);
+    }
+  };
+
+  const handleCheckStatus = async () => {
+    console.log('🏠 Home: Checking backend status...');
+    setTestResult('Checking status...');
+    try {
+      const response = await fetch('/api/status');
+      const data = await response.json();
+
+      if (response.ok) {
+        const status = data.data;
+        setTestResult(`📊 Status: ${status.isAuthenticated ? '✅ Authenticated' : '❌ Not Authenticated'} | Movies: ${status.moviesCount} | Uptime: ${Math.floor(status.uptime / 60)}min`);
+        console.log('Status:', status);
+      } else {
+        setTestResult(`❌ Status check failed: ${data.message || data.error}`);
+      }
+    } catch (error) {
+      console.error('🏠 Home: Status error:', error);
+      setTestResult(`❌ Status Error: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -131,6 +152,24 @@ export default function Home() {
             Test API Call
           </button>
           <button
+            onClick={handleAuthenticate}
+            className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"
+          >
+            🔐 Authenticate
+          </button>
+          <button
+            onClick={handleRefreshMovies}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          >
+            🔄 Refresh Movies
+          </button>
+          <button
+            onClick={handleCheckStatus}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          >
+            📊 Check Status
+          </button>
+          <button
             onClick={() => showPlayer({
               title: "Big Buck Bunny Demo",
               videoSrc: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
@@ -141,7 +180,7 @@ export default function Home() {
           </button>
           <button
             onClick={togglePlayer}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
           >
             Toggle Player
           </button>
