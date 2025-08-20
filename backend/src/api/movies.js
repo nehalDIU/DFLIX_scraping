@@ -282,10 +282,10 @@ router.get('/movies/search', async (req, res) => {
     
     if (q) {
       const searchTerm = q.toLowerCase();
-      movies = movies.filter(movie => 
+      movies = movies.filter(movie =>
         movie.title.toLowerCase().includes(searchTerm) ||
-        movie.description.toLowerCase().includes(searchTerm) ||
-        movie.genres.some(genre => genre.toLowerCase().includes(searchTerm))
+        (movie.description && movie.description.toLowerCase().includes(searchTerm)) ||
+        (movie.genres && movie.genres.some(genre => genre.toLowerCase().includes(searchTerm)))
       );
     }
     

@@ -180,7 +180,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
         )}
 
         {/* Genres */}
-        {movie.genres.length > 0 && (
+        {movie.genres && movie.genres.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {movie.genres.slice(0, 2).map((genre, index) => (
               <span

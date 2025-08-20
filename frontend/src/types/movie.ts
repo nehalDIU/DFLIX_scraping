@@ -8,16 +8,16 @@ export interface DownloadUrl {
 export interface Movie {
   id: string;
   title: string;
-  poster: string;
-  year: string;
-  language: string;
-  detailUrl: string;
-  downloadUrls: DownloadUrl[];
-  genres: string[];
-  rating: string;
-  size: string;
-  quality: string;
-  description: string;
+  poster?: string;
+  year?: string;
+  language?: string;
+  detailUrl?: string;
+  downloadUrls?: DownloadUrl[];
+  genres?: string[];
+  rating?: string;
+  size?: string;
+  quality?: string;
+  description?: string;
 }
 
 export interface ApiResponse<T> {

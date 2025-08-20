@@ -257,7 +257,7 @@ export default function MovieDetailsPage({ movie, onBack }: MovieDetailsPageProp
                     Stream Web
                   </button>
                   <button
-                    onClick={() => handleDownload(movie.downloadUrls[0].url, `${movie.title}.${movie.downloadUrls[0].format || 'mkv'}`)}
+                    onClick={() => movie.downloadUrls?.[0] && handleDownload(movie.downloadUrls[0].url, `${movie.title}.${movie.downloadUrls[0].format || 'mkv'}`)}
                     className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                   >
                     <Download className="w-5 h-5" />

@@ -48,7 +48,7 @@ export default function MovieStreamingSection({ movie }: MovieStreamingSectionPr
   };
 
   const handleExternalPlayerLaunch = async (playerId: string) => {
-    if (!movie.downloadUrls[selectedSource]) return;
+    if (!movie.downloadUrls || !movie.downloadUrls[selectedSource]) return;
 
     setLaunchStatus('Launching...');
     
@@ -97,11 +97,11 @@ export default function MovieStreamingSection({ movie }: MovieStreamingSectionPr
   return (
     <div className="space-y-6">
       {/* Source Selection */}
-      {movie.downloadUrls.length > 1 && (
+      {movie.downloadUrls && movie.downloadUrls.length > 1 && (
         <div className="bg-gray-900 rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-3">Available Sources</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {movie.downloadUrls.map((source, index) => (
+            {movie.downloadUrls?.map((source, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedSource(index)}

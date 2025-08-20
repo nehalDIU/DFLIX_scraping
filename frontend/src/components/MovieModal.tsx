@@ -82,7 +82,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
 
                 <div className="p-6 space-y-6">
                   {/* Video Player Section */}
-                  {movie.downloadUrls.length > 0 ? (
+                  {movie.downloadUrls && movie.downloadUrls.length > 0 ? (
                     <ClientOnlyVideoPlayer
                       sources={movie.downloadUrls}
                       poster={movie.poster}

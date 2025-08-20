@@ -22,7 +22,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/matrix',
-    genre: ['Action', 'Sci-Fi'],
+    genres: ['Action', 'Sci-Fi'],
     rating: '8.7',
     director: 'The Wachowskis',
     cast: ['Keanu Reeves', 'Laurence Fishburne', 'Carrie-Anne Moss']
@@ -45,7 +45,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/inception',
-    genre: ['Action', 'Thriller', 'Sci-Fi'],
+    genres: ['Action', 'Thriller', 'Sci-Fi'],
     rating: '8.8',
     director: 'Christopher Nolan',
     cast: ['Leonardo DiCaprio', 'Marion Cotillard', 'Tom Hardy']
@@ -68,7 +68,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/interstellar',
-    genre: ['Adventure', 'Drama', 'Sci-Fi'],
+    genres: ['Adventure', 'Drama', 'Sci-Fi'],
     rating: '8.6',
     director: 'Christopher Nolan',
     cast: ['Matthew McConaughey', 'Anne Hathaway', 'Jessica Chastain']
@@ -91,7 +91,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/dark_knight',
-    genre: ['Action', 'Crime', 'Drama'],
+    genres: ['Action', 'Crime', 'Drama'],
     rating: '9.0',
     director: 'Christopher Nolan',
     cast: ['Christian Bale', 'Heath Ledger', 'Aaron Eckhart']
@@ -114,7 +114,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/endgame',
-    genre: ['Action', 'Adventure', 'Drama'],
+    genres: ['Action', 'Adventure', 'Drama'],
     rating: '8.4',
     director: 'Anthony Russo, Joe Russo',
     cast: ['Robert Downey Jr.', 'Chris Evans', 'Mark Ruffalo']
@@ -137,7 +137,7 @@ const mockMovies = [
       }
     ],
     streamingUrl: 'https://dflix.discoveryftp.net/stream/parasite',
-    genre: ['Comedy', 'Drama', 'Thriller'],
+    genres: ['Comedy', 'Drama', 'Thriller'],
     rating: '8.6',
     director: 'Bong Joon-ho',
     cast: ['Song Kang-ho', 'Lee Sun-kyun', 'Cho Yeo-jeong']
@@ -164,10 +164,10 @@ class MockDataService {
     // Filter by search query
     if (query) {
       const searchTerm = query.toLowerCase();
-      results = results.filter(movie => 
+      results = results.filter(movie =>
         movie.title.toLowerCase().includes(searchTerm) ||
         movie.description.toLowerCase().includes(searchTerm) ||
-        movie.genre.some(g => g.toLowerCase().includes(searchTerm))
+        (movie.genres && movie.genres.some(g => g.toLowerCase().includes(searchTerm)))
       );
     }
 
